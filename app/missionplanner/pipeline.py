@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import math
 import shutil
+import time
 from pathlib import Path
 from typing import Callable
 
@@ -62,8 +63,10 @@ def run_plan(prj: Project) -> dict:
     prj.write_layer("plan_points", gpd.GeoDataFrame(info, geometry=pts, crs=e))
     prj.write_layer("plan_footprints", gpd.GeoDataFrame(res.footprint_info, geometry=res.footprints, crs=e))
     # planned coverage check
-    xs, ys, cnt, inside = cov.view_count_grid(res.footprints, poly, cell=max(1.0, res.stats["gsd_cm"] / 100 * 100))
-    res.stats["plan_coverage"] = cov.coverage_stats(cnt, inside, max(1.0, res.stats["gsd_cm"]))
+    # grid cell ~1/40 of the shorter footprint side (2 m at 30 m height), at least 0.5 m
+    cell = max(0.5, round(min(res.stats["footprint_across_m"], res.stats["footprint_along_m"]) / 40, 1))
+    xs, ys, cnt, inside = cov.view_count_grid(res.footprints, poly, cell=cell)
+    res.stats["plan_coverage"] = cov.coverage_stats(cnt, inside, cell)
     prj.settings["stats"]["plan"] = res.stats
     prj.settings["stats"]["plan_warnings"] = res.warnings
     prj.save()
@@ -78,7 +81,9 @@ def import_flight(prj: Project, files: list[str | Path], name: str | None = None
     mp4s = sorted(Path(f) for f in files if str(f).lower().endswith(".mp4"))
     if not mp4s:
         raise ValueError("No MP4 files given")
-    name = name or mp4s[0].stem.split("_")[1] if "_" in mp4s[0].stem else mp4s[0].stem
+    if not name:  # DJI_20250706110330_0028_D -> 20250706110330
+        parts = mp4s[0].stem.split("_")
+        name = parts[1] if len(parts) > 1 else mp4s[0].stem
     d = prj.flight_dir(name)
     d.mkdir(parents=True, exist_ok=True)
     clips = []
@@ -275,3 +280,46 @@ def run_coverage(prj: Project, cell: float | None = None) -> dict:
     prj.settings["stats"]["coverage"] = st
     prj.save()
     return st
+
+
+# ------------------------------------------------------------------------------------------------
+# stitching (NodeODM)
+# ------------------------------------------------------------------------------------------------
+def run_odm(prj: Project, flights: list[str] | None = None, run: str | None = None, options: dict | None = None,
+            url: str | None = None, progress: Progress = _noop) -> dict:
+    """Upload the extracted frames of ``flights`` (default: all) to NodeODM, wait, download into odm/<run>/."""
+    from datetime import datetime as _dt
+    from .odm import DEFAULT_OPTIONS, DEFAULT_URL, NodeODM
+
+    flights = flights or list(prj.settings["flights"])
+    imgs = sorted(p for f in flights for p in prj.frames_dir(f).glob("*.jpg"))
+    if len(imgs) < 5:
+        raise RuntimeError(f"only {len(imgs)} frames - extract frames first")
+    run = run or _dt.now().strftime("run_%Y%m%d_%H%M%S")
+    opts = {**DEFAULT_OPTIONS, **(options or {})}
+    node = NodeODM(url or prj.settings.get("odm_url", DEFAULT_URL))
+    if not node.alive():
+        raise RuntimeError(f"NodeODM not reachable at {node.url} (start Docker + the nodeodm container)")
+    rec = {"flights": flights, "n_images": len(imgs), "options": opts, "started": _dt.now().isoformat(timespec="seconds")}
+    prj.settings.setdefault("runs", {})[run] = rec
+    uuid = node.create_task(imgs, f"{prj.settings['title']}_{run}", opts,
+                            progress=lambda p, m: progress(0.1 * p, m))
+    rec.update(uuid=uuid, status="running")
+    prj.save()
+    t0 = time.time()
+    inf = node.wait(uuid, progress=lambda p, m: progress(0.1 + 0.85 * p, f"ODM {m} {p * 100:.0f} %"))
+    code = inf.get("status", {}).get("code")
+    rec.update(processing_s=round(time.time() - t0), status={40: "completed", 30: "failed", 50: "canceled"}[code])
+    out = prj.odm_dir / run
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "odm_log.txt").write_text("\n".join(node.task_output(uuid)), encoding="utf-8")
+    if code == 40:
+        progress(0.96, "downloading results")
+        node.download(uuid, out)
+        rec["outputs"] = sorted(str(p.relative_to(out)).replace("\\", "/") for p in out.rglob("*.tif"))
+    else:
+        rec["error"] = inf.get("status", {}).get("errorMessage", "")
+    rec["finished"] = _dt.now().isoformat(timespec="seconds")
+    prj.save()
+    progress(1.0, f"ODM {rec['status']}")
+    return rec

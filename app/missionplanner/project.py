@@ -42,7 +42,7 @@ class Project:
             (p.root / d).mkdir(parents=True, exist_ok=True)
         p.settings = {"title": name, "epsg": None, "camera": NEO_VIDEO_4K.to_dict(),
                       "plan": PlanParams().to_dict(), "track": TrackParams().to_dict(),
-                      "frames": FrameParams().to_dict(), "flights": {}, "runs": [], "stats": {}}
+                      "frames": FrameParams().to_dict(), "flights": {}, "runs": {}, "stats": {}}
         p.save()
         return p
 

@@ -120,3 +120,32 @@ Layers written to `test_0028.gpkg`: track_points, track_lines, frames, footprint
 See `04_github_survey.md`. No public route to waypoint flight on the Neo. ExifTool documents field
 4.4.1.1 (coordinate units: radians or degrees), which the reader now honours. Our pitch/roll order is confirmed
 from our own data: gimbal roll tracks field 4.3.2.
+
+## 2026-11-26 – Field exports, NodeODM client, pipeline fixes
+
+**Pipeline tests.** `run_plan` and `import_flight` were tested on a 4 ha test rectangle (generic location).
+Two bugs fixed:
+- `import_flight`: an operator-precedence error made a given flight name be ignored when the file name had no
+  `_`. Now the name is used if given, else the DJI timestamp part (`DJI_20250706110330_0028_D` → `20250706110330`).
+- `run_plan`: the planned-coverage grid used one cell size and reported another. The cell is now 1/40 of the
+  shorter footprint side (≈ 1.1 m at 28 m height), used for both.
+- `project.json`: `runs` changed from a list to a dict keyed by run name (like `flights`).
+
+Plan result (2 cm GSD, 80/70 %): 28.5 m height, 9 lines, ~324 frames, 11.7 min, 1 battery; planned
+footprints give ≥ 5 views on 100 % of the area (median 15).
+
+**Field exports** (`missionplanner/exports.py`):
+- `export_kml`: survey area, numbered lines (red = main, cyan = cross grid), start/end points `1S`/`1E`, description
+  with height and speed. Opens in Google Earth or any phone map app.
+- `export_pdf`: one landscape A4 page. Left: plan drawing (north up, numbered lines with direction arrows,
+  dashed transits, "start", north arrow, scale bar). Right: fly settings, DJI Fly camera settings, checklist and a
+  line table with tick boxes.
+
+**NodeODM** (`missionplanner/odm.py`, `pipeline.run_odm`):
+- Docker Desktop 29.9.3; `docker run -d --name nodeodm -p 3000:3000 --restart unless-stopped opendronemap/nodeodm`
+  (image 3.0 GB, NodeODM/ODM 3.6.2, container sees 16 GB RAM and 14 cores).
+- Client: init → upload (one file per request) → commit → poll `/info` → download `all.zip` and unzip into
+  `odm/<run>/`, plus `odm_log.txt`. The run is recorded in `project.json` (`runs`), with options, timing and the
+  list of GeoTIFF outputs.
+- Default options: `camera-lens brown` (wide lens), `feature-quality high`, `min-num-features 10000`,
+  `orthophoto-resolution 2`, `dsm`, `auto-boundary`.
