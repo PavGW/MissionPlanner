@@ -179,3 +179,14 @@ It creates a project, loads an area file, plans, draws a rectangle with the draw
 tab and saves screenshots; 0 browser console errors. Fixed along the way: zoom-to-fit was called before the map was
 initialised, grey margins around the map, thin stripes between merged coverage cells (cells now buffered by
 2 % before merging), underscores in names rendered as italics in tables.
+
+**run02 (options applied) vs run01 (NodeODM defaults), clip 0028, 29 frames.**
+
+| Run | Lens model | Frames placed | Points | Reprojection error | Time | Outputs |
+|---|---|---|---|---|---|---|
+| run01_defaults | auto | 29/29 | 9 846 | 1.22 px | 10.1 min | orthophoto |
+| run02_brown_dsm | brown | 29/29 | 10 352 | 1.17 px | 14.4 min | orthophoto + DSM |
+
+The Brown lens model gives slightly more points and a slightly lower error. The DSM adds about 4 minutes. ODM's
+average GSD is 1.3 cm. It differs from our 2.1 cm estimate because ODM measures from the reconstructed terrain,
+not from the take-off height; the mapped ground sits lower and tree tops sit higher.
