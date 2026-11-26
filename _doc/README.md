@@ -8,4 +8,13 @@
 | [04_github_survey.md](04_github_survey.md) | Open-source projects targeting the DJI Neo; cross-check of the telemetry map |
 | `data/` | Small result tables (inventories, test results) |
 
+## Running
+
+```
+run_app.bat                      # creates .venv on first run, opens http://127.0.0.1:8080
+docker run -d --name nodeodm -p 3000:3000 --restart unless-stopped opendronemap/nodeodm   # once, for stitching
+```
+
+Projects are stored in `projects/<name>/` (`project.json`, `<name>.gpkg`, `flights/`, `frames/`, `exports/`, `odm/`).
+
 The data acquisition workflow will be added once the tools are finished.

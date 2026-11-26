@@ -305,6 +305,11 @@ def run_odm(prj: Project, flights: list[str] | None = None, run: str | None = No
     uuid = node.create_task(imgs, f"{prj.settings['title']}_{run}", opts,
                             progress=lambda p, m: progress(0.1 * p, m))
     rec.update(uuid=uuid, status="running")
+    applied = {o["name"]: o["value"] for o in node.task_info(uuid).get("options", [])}
+    rec["options_applied"] = applied
+    missing = [k for k in opts if k not in applied and str(opts[k]).lower() not in ("false", "")]
+    if missing:  # NodeODM silently drops options it does not accept
+        rec["options_ignored"] = missing
     prj.save()
     t0 = time.time()
     inf = node.wait(uuid, progress=lambda p, m: progress(0.1 + 0.85 * p, f"ODM {m} {p * 100:.0f} %"))

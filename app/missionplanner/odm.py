@@ -69,7 +69,8 @@ class NodeODM:
     def create_task(self, images: list[Path], name: str, options: dict | None = None,
                     progress: Callable[[float, str], None] | None = None) -> str:
         opts = [{"name": k, "value": v} for k, v in (options or {}).items()]
-        uuid = self._post("/task/new/init", data={"name": name, "options": json.dumps(opts)})["uuid"]
+        # multipart, not urlencoded: NodeODM parses init/commit with multer and ignores urlencoded fields
+        uuid = self._post("/task/new/init", files={"name": (None, name), "options": (None, json.dumps(opts))})["uuid"]
         for i, p in enumerate(images):
             with open(p, "rb") as fh:
                 self._post(f"/task/new/upload/{uuid}", files={"images": (p.name, fh, "image/jpeg")}, timeout=300)

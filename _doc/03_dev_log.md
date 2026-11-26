@@ -149,3 +149,33 @@ footprints give ≥ 5 views on 100 % of the area (median 15).
   list of GeoTIFF outputs.
 - Default options: `camera-lens brown` (wide lens), `feature-quality high`, `min-num-features 10000`,
   `orthophoto-resolution 2`, `dsm`, `auto-boundary`.
+
+## 2026-11-26 – First stitch (NodeODM) and the web app
+
+**First stitch, clip 0028 (29 frames, run01).** Completed in 10 min. All 29 frames reconstructed in one
+component, 9 846 points, reprojection error 1.2 px; orthophoto 7 MB.
+**Bug found from the log:** `camera_lens: auto`, no DSM, so none of my options had been applied. NodeODM parses
+`/task/new/init` as multipart form data (multer) and silently ignores URL-encoded fields. The client now sends
+multipart, and `run_odm` reads back the options the task actually received (`options_applied`, plus
+`options_ignored` if any are missing). run02 confirmed: `camera-lens brown`, `dsm`, `orthophoto-resolution 2`
+all applied.
+
+**Web app** (`app/main.py`, NiceGUI 4.1, `run_app.bat`): http://127.0.0.1:8080, bound to localhost only.
+- Header: project selector, new project, open project folder.
+- Map (Leaflet): OSM + Esri imagery; polygon/rectangle drawing sets the survey area; layers survey area, plan
+  lines/footprints, flight tracks, selected frames, frame footprints, coverage classes (0 / 1–2 / 3–4 / 5+ views).
+  It zooms to the project on open.
+- **Plan** tab: load an area file (KML/GeoJSON/GPKG) or draw; camera, GSD-or-height toggle, overlaps, bearing,
+  speed, battery, cross grid, more (margin, turn time, blur); Plan → stats table + warnings; download KML, PDF, GPKG.
+- **Flights** tab: import a folder or file list (copy or reference), per-flight steps 1–4 (track QA, sharpness,
+  select, extract + geotag) or Run 1–4, coverage of all flights; QA settings; per-clip QA table.
+- **Stitch** tab: NodeODM URL + status check, main options, run name, Start; table of runs, folder links,
+  error messages.
+- **QA** tab: layer toggles, coverage legend and stats.
+- Long steps run in a worker thread, one at a time; a progress bar at the bottom shows the current job.
+
+**Testing.** `app/tools/ui_smoke.py` drives the installed Chrome with Playwright (a dev tool, not in requirements).
+It creates a project, loads an area file, plans, draws a rectangle with the drawing tool, plans again, visits every
+tab and saves screenshots; 0 browser console errors. Fixed along the way: zoom-to-fit was called before the map was
+initialised, grey margins around the map, thin stripes between merged coverage cells (cells now buffered by
+2 % before merging), underscores in names rendered as italics in tables.
