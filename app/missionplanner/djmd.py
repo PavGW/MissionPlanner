@@ -99,7 +99,8 @@ def frames(stream: bytes, frame_field: int = 3):
 NEO_FIELDS = {
     "time_us": "1.2",          # microseconds, monotonic
     "lat_rad": "4.4.1.2",      # double, radians
-    "lon_rad": "4.4.1.3",      # double, radians
+    "lon_rad": "4.4.1.3",      # double, radians (or degrees if coord_units == 1)
+    "coord_units": "4.4.1.1",  # 0/absent = radians, 1 = degrees (ExifTool: CoordinateUnits; Neo 2 uses degrees)
     "abs_alt_mm": "4.4.2",
     "rel_alt_mm": "4.5.1",     # above take-off
     "drone_pitch": "4.3.1",
@@ -155,8 +156,9 @@ def read_telemetry(mp4: str | Path, work_dir: str | Path | None = None) -> list[
             g = lambda k, d=None: f[NEO_FIELDS[k]][0] if NEO_FIELDS[k] in f else d  # noqa: E731
             rec = {"idx": i}
             lat, lon = g("lat_rad"), g("lon_rad")
-            rec["lat"] = math.degrees(lat) if isinstance(lat, float) else None
-            rec["lon"] = math.degrees(lon) if isinstance(lon, float) else None
+            conv = (lambda v: v) if g("coord_units", 0) == 1 else math.degrees
+            rec["lat"] = conv(lat) if isinstance(lat, float) else None
+            rec["lon"] = conv(lon) if isinstance(lon, float) else None
             if rec["lat"] == 0 and rec["lon"] == 0:
                 rec["lat"] = rec["lon"] = None
             rec["time_us"] = g("time_us")

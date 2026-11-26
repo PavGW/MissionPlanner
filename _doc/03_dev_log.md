@@ -67,3 +67,56 @@ pilot tilting the camera during the flight.
 Observation: gimbal yaw differs from drone yaw by a near-constant ≈ −20°. Not explained yet (not magnetic
 declination, which is ≈ +5° in Czechia). For footprints the drone yaw is used; to be checked against ODM's
 computed camera orientations.
+
+## 2026-11-26 – Core modules: planner, track QA, coverage
+
+- `camera.py`: camera model from the EXIF (2.598 mm, 14 mm equivalent, 16:9). Neo 4K video: sensor 7.00 × 3.94 mm,
+  pixel 1.82 µm, FOV 106.8° × 74.3°, **GSD 2.1 cm at 30 m**, footprint 80.8 × 45.5 m at 30 m.
+- `planner.py`: parallel lines over the survey polygon (auto bearing along the polygon's long axis, or given),
+  snake order, optional cross grid, lead-in at the line ends, speed limited by motion blur (0.5 px at 1/500 s).
+  Test polygon of 4 ha at 2 cm/px with 80/70 % overlap: 10 lines, 23 m spacing, 8.6 m frame spacing, 301 frames,
+  11.6 min (1 battery); 100 % of the polygon covered by the planned footprints.
+- `track.py`: merges djmd + SRT per frame, smoothed (1 s) positions → speed, along-track distance, yaw rate;
+  QA flags no_gps / not_nadir / tilt / turning / low / hover. QA of all test clips: `_doc/data/test_flights_qa.csv`.
+  Clip 0028 is the only one with nadir footage (6 % of frames within 5° of nadir).
+- `coverage.py`: footprint = the four image-corner rays (plus edge points) intersected with flat ground, so it
+  works for oblique frames too. Checked: nadir 80.8 × 45.5 m, rotates with heading, oblique footprints stretch
+  forward. View-count grid → share of the area with ≥ 5, 3–4, 1–2 and 0 views.
+
+## 2026-11-26 – Frame accuracy of video decoding (important)
+
+**Problem.** A frame's telemetry is only valid if the decoded image really is that frame.
+- Seeking with `ffmpeg -ss` was tested against a reference decode from frame 0, comparing by image correlation.
+  It was exact early in the clip but **one frame off late in the clip** (frame 8000). Using the exact rate
+  30000/1001 instead of 29.97 and seeking half a frame early did not fully fix it.
+- The first extraction version also returned duplicate frames. One of my edits had put a comment inside the
+  argument list, which commented out `-fps_mode passthrough`, so ffmpeg duplicated frames to keep a constant rate.
+- A first test method was misleading: it compared ffmpeg-scaled with OpenCV-scaled images, and the
+  high-pass correlation was dominated by the resampling differences. The test now scales both the same way.
+
+**Solution.** Never seek. Scoring and extraction both decode from frame 0, count frames, and use
+`select=eq(n,…)` with `-fps_mode passthrough`. The filter graph is passed from a file with `-/vf <file>`
+(ffmpeg 9 removed `-filter_script`). Verified: the scores equal the reference Laplacian exactly (17/17), and
+the extracted frames 3000, 3001, 3015 and 3033 match their reference frames exactly.
+
+**Cost.** Decoding 4K HEVC in software runs at about 36 fps (≈ 1.2× real time); DXVA2/D3D11/QSV hardware decoding
+gave no gain or failed. A 12-minute survey clip takes about 10 min to score plus the same again to extract.
+
+## 2026-11-26 – First end-to-end run (project `test_0028`)
+
+Clip 0028 (4 min 43 s). The nadir tolerance was relaxed to 35° because the clip was not flown as a survey.
+
+| Step | Result | Time |
+|---|---|---|
+| Track | 8495 frames, 46.5 % pass the checks | 2 s |
+| Sharpness | 3948 candidate frames scored | 260 s |
+| Selection (80 % forward overlap) | **29 frames**, height 29.8–32.0 m, gimbal pitch −60 to −90°, relative sharpness 0.61–1.38 | <1 s |
+| Extraction + geotag | 29 JPG (3840 × 2160) with EXIF GPS and DJI XMP | 225 s |
+| Coverage | 2.7 ha footprint hull, median 3 views, 43 % with ≥ 5 views, 21 % unseen | <1 s |
+
+Layers written to `test_0028.gpkg`: track_points, track_lines, frames, footprints, coverage.
+
+## 2026-11-26 – GitHub survey
+See `04_github_survey.md`. No public route to waypoint flight on the Neo. ExifTool documents field
+4.4.1.1 (coordinate units: radians or degrees), which the reader now honours. Our pitch/roll order is confirmed
+from our own data: gimbal roll tracks field 4.3.2.

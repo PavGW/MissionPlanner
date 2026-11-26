@@ -10,3 +10,5 @@ Pillow
 reportlab
 simplekml
 requests
+geopandas
+pandas
