@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+test_data/
+projects/
+_work/
+*.MP4
+*.mp4
+*.SRT
+*.JPG
+*.jpg
+*.tif
+*.gpkg
+*.gpkg-wal
+*.gpkg-shm

@@ -1,0 +1,12 @@
+nicegui
+numpy
+pyproj
+shapely
+pyogrio
+opencv-python-headless
+imageio-ffmpeg
+piexif
+Pillow
+reportlab
+simplekml
+requests
