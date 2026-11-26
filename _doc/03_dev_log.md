@@ -191,3 +191,10 @@ The Brown lens model gives slightly more points and a slightly lower error. The 
 an average GSD of 1.3 cm against our 2.1 cm estimate for 30 m. **Not explained yet.** To check: ODM's estimated
 focal length/sensor in `cameras.json`, and the frames' heights above the reconstructed surface (trees, frames tilted
 up to 30° from nadir).
+
+## 2026-11-26 – Acquisition workflow
+
+`05_acquisition_workflow.md`: the field procedure from planning to delivery, built on the tool and on what the test
+data showed: storage 0.43 GB/min (57 Mbit/s), dusk ISO 3400, barometric drift and take-off height, gimbal
+tolerance, processing ≈ 1.7 × video length, stitch times. Figures not yet verified in a real survey (300-frame stitch
+time, phone control range, wind limit) are marked as planning values to check on the first survey.

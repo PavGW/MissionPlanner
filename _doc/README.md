@@ -6,6 +6,7 @@
 | [02_design.md](02_design.md) | Architecture, data model, camera model, algorithms |
 | [03_dev_log.md](03_dev_log.md) | Development log: thinking, steps, results |
 | [04_github_survey.md](04_github_survey.md) | Open-source projects targeting the DJI Neo; cross-check of the telemetry map |
+| [05_acquisition_workflow.md](05_acquisition_workflow.md) | **Field workflow**: plan → prepare → fly → field QA → process → stitch → deliver |
 | `data/` | Small result tables (inventories, test results) |
 
 ## Running
@@ -17,4 +18,3 @@ docker run -d --name nodeodm -p 3000:3000 --restart unless-stopped opendronemap/
 
 Projects are stored in `projects/<name>/` (`project.json`, `<name>.gpkg`, `flights/`, `frames/`, `exports/`, `odm/`).
 
-The data acquisition workflow will be added once the tools are finished.
