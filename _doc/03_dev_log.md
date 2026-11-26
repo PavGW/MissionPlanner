@@ -187,6 +187,7 @@ initialised, grey margins around the map, thin stripes between merged coverage c
 | run01_defaults | auto | 29/29 | 9 846 | 1.22 px | 10.1 min | orthophoto |
 | run02_brown_dsm | brown | 29/29 | 10 352 | 1.17 px | 14.4 min | orthophoto + DSM |
 
-The Brown lens model gives slightly more points and a slightly lower error. The DSM adds about 4 minutes. ODM's
-average GSD is 1.3 cm. It differs from our 2.1 cm estimate because ODM measures from the reconstructed terrain,
-not from the take-off height; the mapped ground sits lower and tree tops sit higher.
+The Brown lens model gives slightly more points and a slightly lower error. The DSM adds about 4 minutes. ODM reports
+an average GSD of 1.3 cm against our 2.1 cm estimate for 30 m. **Not explained yet.** To check: ODM's estimated
+focal length/sensor in `cameras.json`, and the frames' heights above the reconstructed surface (trees, frames tilted
+up to 30° from nadir).
