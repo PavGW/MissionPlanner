@@ -7,6 +7,7 @@
 | [03_dev_log.md](03_dev_log.md) | Development log: thinking, steps, results |
 | [04_github_survey.md](04_github_survey.md) | Open-source projects targeting the DJI Neo; cross-check of the telemetry map |
 | [05_acquisition_workflow.md](05_acquisition_workflow.md) | **Field workflow**: plan → prepare → fly → field QA → process → stitch → deliver |
+| [06_simulator_guide.md](06_simulator_guide.md) ([PDF](06_simulator_guide.pdf)) | Self-built drone project: ArduPilot simulator (SITL) setup and five first exercises |
 | `data/` | Small result tables (inventories, test results) |
 
 ## Running

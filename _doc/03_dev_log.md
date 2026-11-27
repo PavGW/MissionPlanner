@@ -198,3 +198,13 @@ up to 30° from nadir).
 data showed: storage 0.43 GB/min (57 Mbit/s), dusk ISO 3400, barometric drift and take-off height, gimbal
 tolerance, processing ≈ 1.7 × video length, stitch times. Figures not yet verified in a real survey (300-frame stitch
 time, phone control range, wind limit) are marked as planning values to check on the first survey.
+
+## 2026-11-27 – Self-built drone: simulator guide
+
+The user asked whether an app could fly the Neo through the RC-N3. Conclusion: not realistically (no SDK, closed
+and probably encrypted protocol, likely no waypoint mode in the Neo). The new learning project is a self-built
+ArduPilot survey quad. First step: `06_simulator_guide.md` (+ PDF). It covers installing ArduPilot's Mission
+Planner app, starting SITL, and five exercises (orientation, GUIDED flight, survey grid in AUTO, wind + geofence,
+flight logs).
+`app/tools/md_to_pdf.py` converts any `_doc` Markdown file to an A4 PDF with headless Chrome. Note for writing
+docs: Python-Markdown needs **4-space indentation** for nested lists.
